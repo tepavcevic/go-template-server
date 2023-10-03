@@ -5,14 +5,15 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func handlerHome(w http.ResponseWriter, r *http.Request) {
+func executeTemplate(w http.ResponseWriter, filepath string) {
 	w.Header().Set("Content-Type", "text/html")
-	tpl, err := template.ParseFiles("templates/home.gohtml")
+	tpl, err := template.ParseFiles(filepath)
 	if err != nil {
 		log.Printf("template parsing error: %v", err)
 		http.Error(w, "There was an error parsing the template", http.StatusInternalServerError)
@@ -23,34 +24,26 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 		log.Printf("templete execution error: %v", err)
 		http.Error(w, "There was an error executing the template", http.StatusInternalServerError)
 		return
-
 	}
 
 }
 
-func handlerContact(w http.ResponseWriter, r *http.Request) {
-	contactID := chi.URLParam(r, "contactID")
-	fmt.Println(contactID)
+func handlerHome(w http.ResponseWriter, r *http.Request) {
+	tplPath := filepath.Join("templates", "home.gohtml")
 
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "<h1>Contact Page</h1><p>To contact me send an email to <a href=\"mailto:djordje.tepa@gmail.com\">djordje.tepa@gmail.com</a>.</p>")
+	executeTemplate(w, tplPath)
+}
+
+func handlerContact(w http.ResponseWriter, r *http.Request) {
+	tplPath := filepath.Join("templates", "contact.gohtml")
+
+	executeTemplate(w, tplPath)
 }
 
 func handlerFAQ(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(
-		w,
-		`<h1>FAQ</h1>
-		<p>Q: Is there a free version?</p>
-		<p>A: Yes! We offer a free trial for 30 days on any period plans.</p>
-		<br>
-		<p>Q: What are Your support hours?</p>
-		<p>A: Yes! We offer a free trial for 30 days on any period plans.</p>
-		<br>
-		<p>Q: Is there a free version?</p>
-		<p>A: Yes! We offer a free trial for 30 days on any period plans.</p>
-		`,
-	)
+	tplPath := filepath.Join("templates", "faq.gohtml")
+
+	executeTemplate(w, tplPath)
 }
 
 type Router struct{}
@@ -61,7 +54,7 @@ func main() {
 	r.Use(middleware.Logger)
 
 	r.Get("/", handlerHome)
-	r.Get("/contact/{contactID}", handlerContact)
+	r.Get("/contact", handlerContact)
 	r.Get("/faq", handlerFAQ)
 
 	fmt.Println("Starting server at port 8080")
