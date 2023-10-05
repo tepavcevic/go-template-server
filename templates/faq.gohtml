@@ -1,19 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FAQ</title>
-</head>
-<body>
-    <h1>FAQ</h1>
-    <b>Q: Is there a free version?</b>
-    <p>A: Yes! We offer a free trial for 30 days on any period plans.</p>
+<h1>FAQ</h1>
+{{range .}}
+    {{template "qa" .}}
+{{end}}
+
+{{define "qa"}}
+    <b>Q: {{.Question}}</b>
+    <p>A: {{.Answer}} </p>
     <br>
-    <b>Q: What are Your support hours?</b>
-    <p>A: We have support staff answering emails 24/7, though response time may be slower on weekends.</p>
-    <br>
-    <b>Q: How do I contact support?</b>
-    <p>A: Email us - <a href="mailto:support@example.com">support@example.com</a>.</p>
-</body>
-</html>
+{{end}}
