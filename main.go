@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/tepavcevic/go-template-server/controllers"
+	"github.com/tepavcevic/go-template-server/models"
 	"github.com/tepavcevic/go-template-server/templates"
 	"github.com/tepavcevic/go-template-server/views"
 )
@@ -34,7 +35,25 @@ func main() {
 	))
 	r.Get("/faq", controllers.FAQ(tpl))
 
-	userC := controllers.Users{}
+	cfg := models.DefaultPostgresConfig()
+
+	db, err := models.Open(cfg)
+	if err != nil {
+		panic(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	userService := models.UserService{
+		DB: db,
+	}
+
+	userC := controllers.Users{
+		UserService: &userService,
+	}
 	userC.Templates.New = views.Must(views.ParseFS(
 		templates.FS,
 		"signup.gohtml", "tailwind.gohtml",
