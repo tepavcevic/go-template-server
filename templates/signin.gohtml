@@ -1,0 +1,38 @@
+{{template "header" .}}
+<div class="py-12 flex justify-center">
+    <div class="p-8 bg-white rouned shadow">
+        <h1 class="pt-4 pb-8 text-center text-3xl font-bold text-gray-800">Welcome back</h1>
+        <form action="/signin" method="POST">
+            <div class="py-2">
+                <label for="email" class="text-sm font-semibold">Email Address</label>
+                <input name="email" id="email" type="email" placeholder="email@example.com" required
+                    autocomplete="email"
+                    class="w-full px-3 py-2 border border-gray-300 placegolder-gray-600 text-gray-800 rounded"
+                    value="{{.Email}}"
+                    {{if not .Email}}autofocus{{end}} />
+            </div>
+            <div class="py-2">
+                <label for="password" class="text-sm font-semibold">Password</label>
+                <input name="password" id="password" type="password" placeholder="Password" required
+                    class="w-full px-3 py-2 border border-gray-300 placegolder-gray-600 text-gray-800 rounded"
+                    {{if .Email}}autofocus{{end}} />
+            </div>
+
+            <div class="py-4">
+                <button type="submit"
+                    class="w-full py-4 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">Sign
+                    in</button>
+            </div>
+        </form>
+        <div class="py-2 flex items-center justify-between">
+            <p class="text-sm text-gray-600">
+                Don't have an account?
+                <a href="/signup" class="font-bold underline">Sign up</a>
+            </p>
+            <p class="text-sm text-gray-600">
+                <a href="/reset-pw" class="font-bold underline">Forgot your password?</a>
+            </p>
+        </div>
+    </div>
+</div>
+{{template "footer" .}}
