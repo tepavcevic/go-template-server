@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/csrf"
 	"github.com/tepavcevic/go-template-server/controllers"
 	"github.com/tepavcevic/go-template-server/models"
 	"github.com/tepavcevic/go-template-server/templates"
@@ -66,12 +67,13 @@ func main() {
 	r.Post("/users", userC.Create)
 	r.Get("/signin", userC.SignIn)
 	r.Post("/signin", userC.ProcessSignIn)
+	r.Get("/users/me", userC.CurrentUser)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 
 	fmt.Println("Starting server at port 8080")
-
-	http.ListenAndServe(":8080", r)
+	csrfMiddleware := csrf.Protect([]byte("qwertyuiop34asdfghjkle6754321azxcvbn"), csrf.Secure(false))
+	http.ListenAndServe(":8080", csrfMiddleware(r))
 }

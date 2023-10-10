@@ -3,6 +3,9 @@
     <div class="p-8 bg-white rouned shadow">
         <h1 class="pt-4 pb-8 text-center text-3xl font-bold text-gray-800">Welcome back</h1>
         <form action="/signin" method="POST">
+            <div class="hidden">
+                {{csrfField}}
+            </div>
             <div class="py-2">
                 <label for="email" class="text-sm font-semibold">Email Address</label>
                 <input name="email" id="email" type="email" placeholder="email@example.com" required
