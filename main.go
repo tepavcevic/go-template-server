@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/csrf"
 	"github.com/tepavcevic/go-template-server/controllers"
+	"github.com/tepavcevic/go-template-server/migrations"
 	"github.com/tepavcevic/go-template-server/models"
 	"github.com/tepavcevic/go-template-server/templates"
 	"github.com/tepavcevic/go-template-server/views"
@@ -49,7 +50,7 @@ func main() {
 	}
 	defer db.Close()
 
-	err = models.Migrate(db, "migrations")
+	err = models.MigrateFS(db, migrations.FS, ".")
 	if err != nil {
 		panic(err)
 	}
