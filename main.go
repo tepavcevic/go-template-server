@@ -37,6 +37,7 @@ func main() {
 	r.Get("/faq", controllers.FAQ(tpl))
 
 	cfg := models.DefaultPostgresConfig()
+	fmt.Println(cfg)
 
 	db, err := models.Open(cfg)
 	if err != nil {
@@ -47,6 +48,11 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+
+	err = models.Migrate(db, "migrations")
+	if err != nil {
+		panic(err)
+	}
 
 	userService := models.UserService{
 		DB: db,
