@@ -85,7 +85,12 @@ func main() {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 
-	fmt.Println("Starting server at port 8080")
+	umw := controllers.UserMiddleware{
+		SessionService: &sessionService,
+	}
+
 	csrfMiddleware := csrf.Protect([]byte("qwertyuiop34asdfghjkle6754321azxcvbn"), csrf.Secure(false))
-	http.ListenAndServe(":8080", csrfMiddleware(r))
+
+	fmt.Println("Starting server at port 8080")
+	http.ListenAndServe(":8080", csrfMiddleware(umw.SetUser(r)))
 }
