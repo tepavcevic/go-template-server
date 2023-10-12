@@ -15,31 +15,9 @@ import (
 )
 
 func main() {
-	r := chi.NewRouter()
-
-	r.Use(middleware.Logger)
-
-	tpl := views.Must(views.ParseFS(
-		templates.FS,
-		"home.gohtml", "tailwind.gohtml",
-	))
-	r.Get("/", controllers.StaticHandler(tpl))
-
-	tpl = views.Must(views.ParseFS(
-		templates.FS,
-		"contact.gohtml", "tailwind.gohtml",
-	))
-	r.Get("/contact", controllers.StaticHandler(tpl))
-
-	tpl = views.Must(views.ParseFS(
-		templates.FS,
-		"faq.gohtml", "tailwind.gohtml",
-	))
-	r.Get("/faq", controllers.FAQ(tpl))
-
+	// Database setup
 	cfg := models.DefaultPostgresConfig()
 	fmt.Println(cfg)
-
 	db, err := models.Open(cfg)
 	if err != nil {
 		panic(err)
@@ -55,6 +33,7 @@ func main() {
 		panic(err)
 	}
 
+	// Services setup
 	userService := models.UserService{
 		DB: db,
 	}
@@ -62,6 +41,13 @@ func main() {
 		DB: db,
 	}
 
+	// Middleware setup
+	umw := controllers.UserMiddleware{
+		SessionService: &sessionService,
+	}
+	csrfMiddleware := csrf.Protect([]byte("qwertyuiop34asdfghjkle6754321azxcvbn"), csrf.Secure(false))
+
+	// Controllers setup
 	userC := controllers.Users{
 		UserService:    &userService,
 		SessionService: &sessionService,
@@ -74,23 +60,44 @@ func main() {
 		templates.FS,
 		"signin.gohtml", "tailwind.gohtml",
 	))
+
+	// Router and routes setup
+	r := chi.NewRouter()
+
+	r.Use(middleware.Logger)
+	r.Use(csrfMiddleware)
+	r.Use(umw.SetUser)
+
+	tpl := views.Must(views.ParseFS(
+		templates.FS,
+		"home.gohtml", "tailwind.gohtml",
+	))
+	r.Get("/", controllers.StaticHandler(tpl))
+	tpl = views.Must(views.ParseFS(
+		templates.FS,
+		"contact.gohtml", "tailwind.gohtml",
+	))
+	r.Get("/contact", controllers.StaticHandler(tpl))
+	tpl = views.Must(views.ParseFS(
+		templates.FS,
+		"faq.gohtml", "tailwind.gohtml",
+	))
+	r.Get("/faq", controllers.FAQ(tpl))
 	r.Get("/signup", userC.New)
 	r.Post("/users", userC.Create)
 	r.Get("/signin", userC.SignIn)
 	r.Post("/signin", userC.ProcessSignIn)
 	r.Post("/signout", userC.ProcessSignOut)
-	r.Get("/users/me", userC.CurrentUser)
-
+	r.Route("/users/me", func(r chi.Router) {
+		r.Use(umw.RequireUser)
+		r.Get("/", userC.CurrentUser)
+	})
+	// r.Get("/users/me", userC.CurrentUser)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 
-	umw := controllers.UserMiddleware{
-		SessionService: &sessionService,
-	}
-
-	csrfMiddleware := csrf.Protect([]byte("qwertyuiop34asdfghjkle6754321azxcvbn"), csrf.Secure(false))
-
+	// Start the server
 	fmt.Println("Starting server at port 8080")
-	http.ListenAndServe(":8080", csrfMiddleware(umw.SetUser(r)))
+	http.ListenAndServe(":8080", r)
 }
