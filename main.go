@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/csrf"
+	"github.com/joho/godotenv"
 	"github.com/tepavcevic/go-template-server/controllers"
 	"github.com/tepavcevic/go-template-server/migrations"
 	"github.com/tepavcevic/go-template-server/models"
@@ -14,11 +17,54 @@ import (
 	"github.com/tepavcevic/go-template-server/views"
 )
 
+type config struct {
+	PSQL models.PostgresConfig
+	SMTP models.SMTPConfig
+	CSRF struct {
+		Key    string
+		Secure bool
+	}
+	Server struct {
+		Address string
+	}
+}
+
+func loadEnvConfig() (config, error) {
+	var cfg config
+
+	err := godotenv.Load()
+	if err != nil {
+		return cfg, err
+	}
+
+	cfg.PSQL = models.DefaultPostgresConfig()
+
+	cfg.SMTP.Host = os.Getenv("SMTP_HOST")
+	portStr := os.Getenv("SMTP_PORT")
+
+	cfg.SMTP.Port, err = strconv.Atoi(portStr)
+	if err != nil {
+		panic(err)
+	}
+	cfg.SMTP.Username = os.Getenv("SMTP_USERNAME")
+	cfg.SMTP.Password = os.Getenv("SMTP_PASSWORD")
+
+	cfg.CSRF.Key = "qwertyuiop34asdfghjkle6754321azxcvbn"
+	cfg.CSRF.Secure = false
+
+	cfg.Server.Address = ":8080"
+
+	return cfg, nil
+}
+
 func main() {
+	cfg, err := loadEnvConfig()
+	if err != nil {
+		panic(err)
+	}
 	// Database setup
-	cfg := models.DefaultPostgresConfig()
 	fmt.Println(cfg)
-	db, err := models.Open(cfg)
+	db, err := models.Open(cfg.PSQL)
 	if err != nil {
 		panic(err)
 	}
@@ -34,23 +80,32 @@ func main() {
 	}
 
 	// Services setup
-	userService := models.UserService{
+	userService := &models.UserService{
 		DB: db,
 	}
-	sessionService := models.SessionService{
+	sessionService := &models.SessionService{
 		DB: db,
 	}
+	passwordResetService := &models.PasswordResetService{
+		DB: db,
+	}
+	emailService := models.NewEmailService(cfg.SMTP)
 
 	// Middleware setup
 	umw := controllers.UserMiddleware{
-		SessionService: &sessionService,
+		SessionService: sessionService,
 	}
-	csrfMiddleware := csrf.Protect([]byte("qwertyuiop34asdfghjkle6754321azxcvbn"), csrf.Secure(false))
+	csrfMiddleware := csrf.Protect(
+		[]byte(cfg.CSRF.Key),
+		csrf.Secure(cfg.CSRF.Secure),
+	)
 
 	// Controllers setup
 	userC := controllers.Users{
-		UserService:    &userService,
-		SessionService: &sessionService,
+		UserService:          userService,
+		SessionService:       sessionService,
+		PasswordResetService: passwordResetService,
+		EmailService:         emailService,
 	}
 	userC.Templates.New = views.Must(views.ParseFS(
 		templates.FS,
@@ -95,12 +150,14 @@ func main() {
 		r.Use(umw.RequireUser)
 		r.Get("/", userC.CurrentUser)
 	})
-	// r.Get("/users/me", userC.CurrentUser)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 
 	// Start the server
-	fmt.Println("Starting server at port 8080")
-	http.ListenAndServe(":8080", r)
+	fmt.Println("Starting server at port", cfg.Server.Address)
+	err = http.ListenAndServe(cfg.Server.Address, r)
+	if err != nil {
+		panic(err)
+	}
 }
