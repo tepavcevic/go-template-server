@@ -7,6 +7,7 @@ require (
 	github.com/go-mail/mail/v2 v2.3.0
 	github.com/gorilla/csrf v1.7.1
 	github.com/jackc/pgx/v4 v4.18.1
+	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.15.1
 	golang.org/x/crypto v0.14.0
 )
