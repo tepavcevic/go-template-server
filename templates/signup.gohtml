@@ -2,7 +2,7 @@
 <div class="py-12 flex justify-center">
     <div class="p-8 bg-white rouned shadow">
         <h1 class="pt-4 pb-8 text-center text-3xl font-bold text-gray-800">Start sharing your photos today!</h1>
-        <form action="/users" method="POST">
+        <form action="/users" method="POST" onsubmit="signUpBtn.disabled = true; return true;">
             <div class="hidden">
                 {{csrfField}}
             </div>
@@ -22,9 +22,13 @@
             </div>
 
             <div class="py-4">
-                <button type="submit"
-                    class="w-full py-4 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">Sign
-                    up</button>
+                <button
+                    type="submit"
+                    class="w-full py-4 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg disabled:bg-slate-300"
+                    name="signUpBtn"
+                >
+                    Sign up
+            </button>
             </div>
         </form>
         <div class="py-2 flex items-center justify-between">
