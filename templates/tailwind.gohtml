@@ -10,17 +10,19 @@
 
   <body class="min-h-screen bg-gray-100">
     <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
-      <nav class="px-8 py-6 flex items-center justify-between gap-4">
-        <div class="text-3xl font-mono">
+      <nav class="px-8 py-6 flex items-center gap-4">
+        <div class="text-3xl font-mono pe-6">
           My logo
         </div>
-        <div>
+        <div class="flex-grow">
           <a class="text-lg font-semibold hover:text-blue-100 hover:underline pr-8" href="/">Home</a>
           <a class="text-lg font-semibold hover:text-blue-100 hover:underline pr-8" href="/contact">Contact</a>
           <a class="text-lg font-semibold hover:text-blue-100 hover:underline" href="/faq">FAQ</a>
         </div>
+
         <div class="flex items-center gap-4">
           {{if currentUser}}
+            <a class="text-lg font-semibold hover:text-blue-100 hover:underline pr-4" href="/galleries">My Galleries</a>
             <form action="/signout" method="POST" class="inline">
               <div class="hidden">
                 {{csrfField}}

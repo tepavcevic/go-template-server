@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -13,8 +14,10 @@ import (
 
 type Galleries struct {
 	Templates struct {
-		New  Template
-		Edit Template
+		Show  Template
+		New   Template
+		Edit  Template
+		Index Template
 	}
 	GalleryService *models.GalleryService
 }
@@ -42,6 +45,36 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
 	http.Redirect(w, r, editPath, http.StatusFound)
+}
+
+func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusNotFound)
+		return
+	}
+	gallery, err := g.GalleryService.ByID(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			http.Error(w, "Gallery not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	var data struct {
+		ID     int
+		Title  string
+		Images []string
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	for i := 0; i < 20; i++ {
+		w, h := rand.Intn(500)+200, rand.Intn(500)+200
+		catImageURL := fmt.Sprintf("https://placekitten.com/%d/%d", w, h)
+		data.Images = append(data.Images, catImageURL)
+	}
+	g.Templates.Show.Execute(w, r, data)
 }
 
 func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
@@ -102,4 +135,27 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
 	http.Redirect(w, r, editPath, http.StatusFound)
 
+}
+
+func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
+	type Gallery struct {
+		ID    int
+		Title string
+	}
+	var data struct {
+		Galleries []Gallery
+	}
+	user := context.User(r.Context())
+	galleries, err := g.GalleryService.ByUserID(user.ID)
+	if err != nil {
+		http.Error(w, "something went wrong", http.StatusInternalServerError)
+		return
+	}
+	for _, gallery := range galleries {
+		data.Galleries = append(data.Galleries, Gallery{
+			ID:    gallery.ID,
+			Title: gallery.Title,
+		})
+	}
+	g.Templates.Index.Execute(w, r, data)
 }

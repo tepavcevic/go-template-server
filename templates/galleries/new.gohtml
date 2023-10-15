@@ -1,7 +1,5 @@
 {{template "header" .}}
-    <div class="w-full">
-        <h1 class="pt-4 pb-8 text-3xl font-bold text-gray-800">Create a new Gallery</h1>
-    </div>
+    <h1 class="pt-4 pb-8 text-3xl font-bold text-gray-800">Create a new Gallery</h1>
     <form action="/galleries" method="POST" onsubmit="addTitleBtn.disabled = true; return true;">
         <div class="hidden">
             {{csrfField}}
