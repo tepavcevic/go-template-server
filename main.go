@@ -63,7 +63,6 @@ func main() {
 		panic(err)
 	}
 	// Database setup
-	fmt.Println(cfg)
 	db, err := models.Open(cfg.PSQL)
 	if err != nil {
 		panic(err)
@@ -90,6 +89,9 @@ func main() {
 		DB: db,
 	}
 	emailService := models.NewEmailService(cfg.SMTP)
+	galleryService := models.GalleryService{
+		DB: db,
+	}
 
 	// Middleware setup
 	umw := controllers.UserMiddleware{
@@ -98,6 +100,7 @@ func main() {
 	csrfMiddleware := csrf.Protect(
 		[]byte(cfg.CSRF.Key),
 		csrf.Secure(cfg.CSRF.Secure),
+		csrf.Path("/"),
 	)
 
 	// Controllers setup
@@ -106,6 +109,9 @@ func main() {
 		SessionService:       sessionService,
 		PasswordResetService: passwordResetService,
 		EmailService:         emailService,
+	}
+	galleryC := controllers.Galleries{
+		GalleryService: &galleryService,
 	}
 	userC.Templates.New = views.Must(views.ParseFS(
 		templates.FS,
@@ -126,6 +132,10 @@ func main() {
 	userC.Templates.ResetPassword = views.Must(views.ParseFS(
 		templates.FS,
 		"reset-password.gohtml", "tailwind.gohtml",
+	))
+	galleryC.Templates.New = views.Must(views.ParseFS(
+		templates.FS,
+		"galleries/new.gohtml", "tailwind.gohtml",
 	))
 
 	// Router and routes setup
@@ -159,6 +169,12 @@ func main() {
 	r.Route("/users/me", func(r chi.Router) {
 		r.Use(umw.RequireUser)
 		r.Get("/", userC.CurrentUser)
+	})
+	r.Route("/galleries", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(umw.RequireUser)
+			r.Get("/new", galleryC.New)
+		})
 	})
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
