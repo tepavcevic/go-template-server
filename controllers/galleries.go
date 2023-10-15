@@ -37,7 +37,6 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	data.UserID = context.User(r.Context()).ID
 	data.Title = r.FormValue("title")
-
 	gallery, err := g.GalleryService.Create(data.Title, data.UserID)
 	if err != nil {
 		g.Templates.New.Execute(w, r, data, err)
@@ -48,18 +47,8 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	gallery, err := g.galleryById(w, r)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusNotFound)
-		return
-	}
-	gallery, err := g.GalleryService.ByID(id)
-	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			http.Error(w, "Gallery not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
 	var data struct {
@@ -78,23 +67,8 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	gallery, err := g.galleryById(w, r, userMustOwnGallery)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusNotFound)
-		return
-	}
-	gallery, err := g.GalleryService.ByID(id)
-	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			http.Error(w, "Gallery not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		return
-	}
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID {
-		http.Error(w, "Unauthorized", http.StatusForbidden)
 		return
 	}
 	var data struct {
@@ -107,23 +81,8 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	gallery, err := g.galleryById(w, r, userMustOwnGallery)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusNotFound)
-		return
-	}
-	gallery, err := g.GalleryService.ByID(id)
-	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			http.Error(w, "Gallery not found", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		return
-	}
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID {
-		http.Error(w, "Unauthorized", http.StatusForbidden)
 		return
 	}
 	gallery.Title = r.FormValue("title")
@@ -158,4 +117,39 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	g.Templates.Index.Execute(w, r, data)
+}
+
+type galleryOpt func(http.ResponseWriter, *http.Request, *models.Gallery) error
+
+func (g Galleries) galleryById(w http.ResponseWriter, r *http.Request, opts ...galleryOpt) (*models.Gallery, error) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusNotFound)
+		return nil, err
+	}
+	gallery, err := g.GalleryService.ByID(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			http.Error(w, "Gallery not found", http.StatusNotFound)
+			return nil, err
+		}
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return nil, err
+	}
+	for _, opt := range opts {
+		err = opt(w, r, gallery)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return gallery, nil
+}
+
+func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return fmt.Errorf("user unauthorized")
+	}
+	return nil
 }
