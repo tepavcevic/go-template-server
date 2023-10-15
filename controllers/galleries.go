@@ -107,7 +107,7 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	user := context.User(r.Context())
 	galleries, err := g.GalleryService.ByUserID(user.ID)
 	if err != nil {
-		http.Error(w, "something went wrong", http.StatusInternalServerError)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
 	for _, gallery := range galleries {
@@ -117,6 +117,19 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	g.Templates.Index.Execute(w, r, data)
+}
+
+func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryById(w, r, userMustOwnGallery)
+	if err != nil {
+		return
+	}
+	err = g.GalleryService.Delete(gallery.ID)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 type galleryOpt func(http.ResponseWriter, *http.Request, *models.Gallery) error

@@ -186,11 +186,12 @@ func main() {
 		r.Get("/{id}", galleryC.Show)
 		r.Group(func(r chi.Router) {
 			r.Use(umw.RequireUser)
+			r.Get("/", galleryC.Index)
 			r.Get("/new", galleryC.New)
 			r.Post("/", galleryC.Create)
 			r.Get("/{id}/edit", galleryC.Edit)
 			r.Post("/{id}", galleryC.Update)
-			r.Get("/", galleryC.Index)
+			r.Post("/{id}/delete", galleryC.Delete)
 		})
 	})
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
