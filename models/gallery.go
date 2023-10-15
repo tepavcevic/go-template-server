@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/tepavcevic/go-template-server/errors"
 )
 
 type Gallery struct {
@@ -21,12 +23,69 @@ func (gs *GalleryService) Create(title string, userID int) (*Gallery, error) {
 		UserID: userID,
 	}
 	row := gs.DB.QueryRow(`
-	INSERT INTO galleries (title, user_id)
-	VALUES ($1, $2) RETURNING id;
+		INSERT INTO galleries (title, user_id)
+		VALUES ($1, $2) RETURNING id;
 	`, gallery.Title, gallery.UserID)
 	err := row.Scan(&gallery.ID)
 	if err != nil {
 		return nil, fmt.Errorf("create gallery: %w", err)
 	}
 	return &gallery, nil
+}
+
+func (gs *GalleryService) ByID(id int) (*Gallery, error) {
+	gallery := Gallery{
+		ID: id,
+	}
+	row := gs.DB.QueryRow(`
+		SELECT title, user_id
+		FROM galleries
+		WHERE id = $1;
+	`, gallery.ID)
+	err := row.Scan(&gallery.Title, &gallery.UserID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get gallery by id: %w", err)
+	}
+	return &gallery, nil
+}
+
+func (gs GalleryService) ByUserID(userID int) ([]Gallery, error) {
+	rows, err := gs.DB.Query(`
+		SELECT id, title
+		FROM galleries
+		WHERE user_id = $1;
+	`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get galleries by user: %w", err)
+	}
+	var galleries []Gallery
+	for rows.Next() {
+		gallery := Gallery{
+			UserID: userID,
+		}
+		err = rows.Scan(&gallery.ID, &gallery.Title)
+		if err != nil {
+			return nil, fmt.Errorf("get galleries by user: %w", err)
+		}
+		galleries = append(galleries, gallery)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("get galleries by user: %w", err)
+	}
+	return galleries, nil
+}
+
+func (gs *GalleryService) Update(gallery *Gallery) error {
+	_, err := gs.DB.Exec(`
+		UPDATE galleries
+		SET title = $2
+		WHERE id = $1;
+	`, gallery.ID, gallery.Title)
+	if err != nil {
+		return fmt.Errorf("update gallery: %w", err)
+	}
+	return nil
 }
