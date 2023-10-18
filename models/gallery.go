@@ -150,6 +150,18 @@ func (gs *GalleryService) Image(galleryID int, filename string) (Image, error) {
 	}, nil
 }
 
+func (gs *GalleryService) DeleteImage(galleryID int, filename string) error {
+	image, err := gs.Image(galleryID, filename)
+	if err != nil {
+		return fmt.Errorf("deleteing image: %w", err)
+	}
+	err = os.Remove(image.Path)
+	if err != nil {
+		return fmt.Errorf("deleting image: %w", err)
+	}
+	return nil
+}
+
 func (gs *GalleryService) extentions() []string {
 	return []string{".png", ".jpg", ".jpeg", ".gif"}
 }
