@@ -3,9 +3,17 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/tepavcevic/go-template-server/errors"
 )
+
+type Image struct {
+	GalleryID int
+	Path      string
+	Filename  string
+}
 
 type Gallery struct {
 	ID     int
@@ -15,6 +23,10 @@ type Gallery struct {
 
 type GalleryService struct {
 	DB *sql.DB
+
+	// ImagesDir is the directory where images are stored.
+	// If not set it defaults to "images" directory.
+	ImagesDir string
 }
 
 func (gs *GalleryService) Create(title string, userID int) (*Gallery, error) {
@@ -99,4 +111,46 @@ func (gs *GalleryService) Delete(id int) error {
 		return fmt.Errorf("delete gallery: %w", err)
 	}
 	return nil
+}
+
+func (gs *GalleryService) Images(galleryID int) ([]Image, error) {
+	globPattern := filepath.Join(gs.galleryDir(galleryID), "*")
+	allFiles, err := filepath.Glob(globPattern)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving images: %w", err)
+	}
+	var images []Image
+	for _, file := range allFiles {
+		if hasExtention(file, gs.extentions()) {
+			images = append(images, Image{
+				Path:      file,
+				Filename:  filepath.Base(file),
+				GalleryID: galleryID,
+			})
+		}
+	}
+	return images, nil
+}
+
+func (gs *GalleryService) extentions() []string {
+	return []string{".png", ".jpg", ".jpeg", ".gif"}
+}
+
+func (gs *GalleryService) galleryDir(id int) string {
+	imagesDir := gs.ImagesDir
+	if imagesDir == "" {
+		imagesDir = "images"
+	}
+	return filepath.Join(imagesDir, fmt.Sprintf("gallery-%d", id))
+}
+
+func hasExtention(file string, extentions []string) bool {
+	for _, ext := range extentions {
+		file = strings.ToLower(file)
+		ext = strings.ToLower(ext)
+		if filepath.Ext(file) == ext {
+			return true
+		}
+	}
+	return false
 }
