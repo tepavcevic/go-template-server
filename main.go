@@ -195,6 +195,7 @@ func main() {
 			r.Post("/{id}", galleryC.Update)
 			r.Post("/{id}/delete", galleryC.Delete)
 			r.Post("/{id}/images/{filename}/delete", galleryC.DeleteImage)
+			r.Post("/{id}/images", galleryC.UploadImage)
 		})
 	})
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
