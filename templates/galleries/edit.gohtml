@@ -22,6 +22,16 @@
         </button>
         </div>
     </form>
+    <div class="py-4">
+        <h2 class="pb-4 test-sm font-semibold text-gray-800">Current Images</h2>
+        <div class="py-2 grid grid-cols-8 gap-2">
+            {{range .Images}}
+                <div class="h-min w-full relative">
+                    <img class="w-full" src="/galleries/{{.GalleryID}}/images/{{.FilenameEscaped}}">
+                </div>
+            {{end}}
+        </div>
+    </div>
     {{/* Danger actions */}}
     <h2>Dangerous actions</h2>
     <form action="/galleries/{{.ID}}/delete" method="POST" onsubmit="return confirm('Do you really want to delete this gallery?');">
