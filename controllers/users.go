@@ -54,7 +54,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 	fmt.Fprintf(w, "User created %+v", user)
 }
 
