@@ -2,3 +2,4 @@ server
 .env
 .idea/
 images/
+node_modules/
